@@ -43,17 +43,21 @@ ScriptClass GraphBuilder {
 
         __AddRootVertices $graph
 
-        __AddEntitytypeVertices $graph
+#        __AddEntitytypeVertices $graph
 
-        __AddEdgesToEntityTypeVertices $graph
+#        __AddEdgesToEntityTypeVertices $graph
 
-        __ConnectEntityTypesWithMethodEdges $graph
+#        __ConnectEntityTypesWithMethodEdges $graph
 
-        __CopyEntityTypeEdgesToSingletons $graph
+#        __CopyEntityTypeEdgesToSingletons $graph
 
         __UpdateProgress 100
 
         $graph
+    }
+
+    function AddEntityTypeVertex($graph, $typeName ) {
+        __AddEntityTypeVertex $graph $typeName
     }
 
     function __AddRootVertices($graph) {
@@ -81,15 +85,19 @@ ScriptClass GraphBuilder {
         $graph |=> AddVertex $entity
     }
 
-    function __AddEntityTypeVertices($graph) {
-        $entityTypes = $this.dataModel |=> GetEntityTypes
+    function __AddEntityTypeVertices($graph, $typeName) {
+        $entityTypes = $this.dataModel |=> GetEntityTypes $typeName
         __AddVerticesFromSchemas $graph $entityTypes
 
         __UpdateProgress 20
     }
 
-    function __AddEdgesToEntityTypeVertices($graph) {
-        $types = $graph.typeVertices.Values
+    function __AddEdgesToEntityTypeVertices($graph, $typeName) {
+        $types = if ( $typeName ) {
+            $graph.typeVertices.values | where name -eq $typeName
+        } else {
+            $graph.typeVertices.Values
+        }
         $progressTotal = $types.count
         $progressIndex = 0
 
@@ -115,12 +123,12 @@ ScriptClass GraphBuilder {
         __UpdateProgress 40
     }
 
-    function __ConnectEntityTypesWithMethodEdges($graph) {
+    function __ConnectEntityTypesWithMethodEdges($graph, $typeName) {
         $actions = $this.dataModel |=> GetActions
-        __AddMethodTransitions $graph $actions
+        __AddMethodTransitions $graph $actions $typeName
 
         $functions = $this.dataModel |=> GetFunctions
-        __AddMethodTransitions $graph $functions
+        __AddMethodTransitions $graph $functions $typeName
 
         __UpdateProgress 75
     }
@@ -145,7 +153,7 @@ ScriptClass GraphBuilder {
         $::.ProgressWriter |=> WriteProgress -id 1 -activity $metadataActivity @completionArguments
     }
 
-    function __AddMethodTransitions($graph, $methods) {
+    function __AddMethodTransitions($graph, $methods, $typeName) {
         $methods | foreach {
             $parameters = try {
                 $_.parameter
@@ -155,7 +163,7 @@ ScriptClass GraphBuilder {
             $method = $_
             $source = if ( $parameters ) {
                 $bindingParameter = $parameters | where { $_.name -eq 'bindingParameter' -or $_.name -eq 'bindParameter' }
-                if ( $bindingParameter ) {
+                if ( $bindingParameter -and ( $typeName -ne $null -and $bindingParameter.Type -eq $typeName ) ) {
                     $bindingTargetVertex = $graph |=> TypeVertexFromTypeName $bindingParameter.Type
 
                     if ( $bindingTargetVertex ) {

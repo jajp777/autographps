@@ -23,9 +23,13 @@ ScriptClass GraphDataModel {
         $this.SchemaData.Edmx.DataServices.Schema.Namespace
     }
 
-    function GetEntityTypes {
+    function GetEntityTypes($typeName) {
         $::.ProgressWriter |=> WriteProgress -id 2 -activity "Parsing entity types"
-        $this.SchemaData.Edmx.DataServices.Schema.EntityType
+        if ( $typeName ) {
+            $this.SchemaData.Edmx.DataServices.Schema.EntityType | where Name -eq $typeName
+        } else {
+            $this.SchemaData.Edmx.DataServices.Schema.EntityType
+        }
     }
 
     function GetEntitySets {
