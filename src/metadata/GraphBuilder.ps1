@@ -37,7 +37,7 @@ ScriptClass GraphBuilder {
     }
 
     function NewGraph {
-        $graph = new-so EntityGraph $this.namespace $this.version $this.graphEndpoint $this.dataModel.SchemaData
+        $graph = new-so EntityGraph $this.namespace $this.version $this.graphEndpoint
 
         __UpdateProgress 0
 
@@ -56,7 +56,7 @@ ScriptClass GraphBuilder {
         $graph
     }
 
-    function AddEntityTypeVertex($graph, $typeName ) {
+    function AddEntityTypeVertex($graph, $typeName) {
         __AddEntityTypeVertex $graph $typeName
     }
 
@@ -70,13 +70,16 @@ ScriptClass GraphBuilder {
         __UpdateProgress 5
     }
 
-    function __AddVerticesFromSchemas($graph, $schemas) {
-        $progressTotal = $schemas.count
+    function __AddVerticesFromSchemas($graph, $schemas, $singleType = $false) {
         $progressIndex = 0
 
-        $schemas | foreach {
-            __AddVertex $graph $_
-            $progressIndex += 1
+        if ( $singleType ) {
+            __AddVertex $graph $schemas
+        } else {
+            $schemas | foreach {
+                __AddVertex $graph $_
+                $progressIndex += 1
+            }
         }
     }
 
@@ -87,21 +90,31 @@ ScriptClass GraphBuilder {
 
     function __AddEntityTypeVertices($graph, $typeName) {
         $entityTypes = $this.dataModel |=> GetEntityTypes $typeName
-        __AddVerticesFromSchemas $graph $entityTypes
+#        $this.dataModel.SchemaData.Edmx.DataServices.Schema.EntityType | select -first 5 | out-host
+#        write-host 'addentitytypevertices', $typeName
+#        write-host "types", $entityTypes.gettype()
+#        if ( $graph.typeVertices[$typeName] ) {
+#            throw 'anger'
+#        }
+
+        $singleType = $typeName -ne $null
+        __AddVerticesFromSchemas $graph $entityTypes $singleType
 
         __UpdateProgress 20
     }
 
     function __AddEdgesToEntityTypeVertices($graph, $typeName) {
         $types = if ( $typeName ) {
+            write-host 'addentitytypevertices got called for single type', $typeName
             $graph.typeVertices.values | where name -eq $typeName
         } else {
             $graph.typeVertices.Values
         }
-        $progressTotal = $types.count
+
         $progressIndex = 0
 
         $types | foreach {
+            write-host "entitytype", $_.name
             $source = $_
             $transitions = if ( $source.entity.navigations ) {
                 $source.entity.navigations
@@ -111,13 +124,27 @@ ScriptClass GraphBuilder {
             $transitions | foreach {
                 $transition = $_
                 $sink = $graph |=> TypeVertexFromTypeName $transition.typedata.entitytypename
+
+                if ( $typeName -and ($sink -eq $null) ) {
+                    $name = $transition.typedata.entitytypename
+                    write-host 'trying to get', $name
+                    $unqualifiedName = $name.substring($graph.namespace.length + 1, $name.length - $graph.namespace.length - 1)
+                    $sinkSchema = $this.datamodel |=> GetEntityTypes $unqualifiedName
+                    if ( $sinkSchema ) {
+                        __AddEntityTypeVertices $graph $unqualifiedName
+                        $sink = $graph |=> TypeVertexFromTypeName $transition.typedata.entitytypename
+                    } else {
+                        write-verbose "Unable to find schema for '$($transition.type)', $($transition.typedata.entitytypename)"
+                    }
+                }
                 if ( $sink -ne $null ) {
                     $edge = new-so EntityEdge $source $sink $transition
                     $source |=> AddEdge $edge
                 } else {
-                    write-verbose "Unable to find entity type for '$($transition.type)', skipping"
+                    write-verbose "Unable to find entity type for '$($transition.type)', $($transition.typedata.entitytypename), skipping"
                 }
             }
+            $source.buildState.NavigationsAdded = $true
             $progressIndex += 1
         }
         __UpdateProgress 40
@@ -133,9 +160,9 @@ ScriptClass GraphBuilder {
         __UpdateProgress 75
     }
 
-    function __CopyEntityTypeEdgesToSingletons($graph) {
+    function __CopyEntityTypeEdgesToSingletons($graph, $singletonName) {
         if ( ! $this.deferredBuild ) {
-            $this.scriptclass |=> __CopyEntityTypeEdgesToSingletons $graph
+            $this.scriptclass |=> __CopyEntityTypeEdgesToSingletons $graph $singletonName
         } else {
             write-verbose "Deferred build set -- skipping connection of singletons to entity types to avoid deserialization depth issues"
         }
@@ -219,13 +246,23 @@ ScriptClass GraphBuilder {
             __CopyEntityTypeEdgesToSingletons $graph
         }
 
-        function __CopyEntityTypeEdgesToSingletons($graph) {
-            ($graph |=> GetRootVertices).values | foreach {
+        function __CopyEntityTypeEdgesToSingletons($graph, $singletonName) {
+            $rootVertices = ($graph |=> GetRootVertices).values
+            $singletonCandidates = if ( $singletonName ) {
+                write-host 'targeted'
+                $rootVertices | where Name -eq $singletonName
+            } else {
+                write-host 'everything'
+                $rootVertices
+            }
+
+            $singletonCandidates | foreach {
                 $source = $_
                 $edges = if ( $source.type -eq 'Singleton' ) {
-                    $typeVertex = $graph |=> TypeVertexFromTypeName ($source.entity.typeData).EntityTypeName
+                    $entityName = ($source.entity.typeData).EntityTypeName
+                    $typeVertex = $graph |=> TypeVertexFromTypeName $entityName
                     if ( $typeVertex -eq $null ) {
-                        throw "Unable to find an entity type for type '$($source.entity.type)"
+                        throw "Unable to find an entity type for singleton '$($_.name)' and '$entityName'"
                     }
                     $typeVertex.outgoingEdges.values | foreach {
                         if ( ( $_ | gm transition ) -ne $null ) {
