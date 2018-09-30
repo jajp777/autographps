@@ -57,9 +57,8 @@ ScriptClass DynamicBuilder {
                 }
                 'EntityType' {
                     $name = $vertex.entity.typedata.entitytypename
-                    $unqualifiedName = $name.substring($this.graph.namespace.length + 1, $name.length - $this.graph.namespace.length - 1)
                     if ( ! $vertex.buildstate.navigationsAdded ) {
-                        __AddTypeEdges $unqualifiedName
+                        __AddTypeEdges $name
                         $vertex.buildState.NavigationsAdded = $true
                     }
 
@@ -114,9 +113,8 @@ ScriptClass DynamicBuilder {
         }
 
         $typeName = $typeVertex.entity.typedata.entitytypename
-        $unqualifiedTypeName = $typeName.substring($this.graph.namespace.length + 1, $typeName.length - $this.graph.namespace.length - 1)
         if ( ! $typeVertex.buildState.NavigationsAdded ) {
-            __AddTypeEdges $unqualifiedTypeName
+            __AddTypeEdges $typeName
             $typeVertex.buildState.SingletonEntityTypeDataAdded = $true
             $typeVertex.buildState.NavigationsAdded = $true
         }
@@ -129,15 +127,22 @@ ScriptClass DynamicBuilder {
 
         $this.builder |=> __AddEntityTypeVertices $this.graph $unqualifiedName
 
-        __AddTypeEdges $unqualifiedName
+        __AddTypeEdges $name
 
         $typeVertex = $this.graph |=> TypeVertexFromTypeName $name
         $typeVertex.buildstate.NavigationsAdded = $true
     }
 
-    function __AddTypeEdges($unqualifiedTypeName) {
+    function __AddTypeEdges($qualifiedTypeName) {
+        $typeVertex = $this.graph |=> TypeVertexFromTypeName $qualifiedTypeName
+        $unqualifiedTypeName = $qualifiedTypeName.substring($this.graph.namespace.length + 1, $name.length - $this.graph.namespace.length - 1)
         write-host "AddEdges '$unqualifiedTypeName'"
-        $this.builder |=>  __AddEdgesToEntityTypeVertices $this.graph $unqualifiedTypeName
+        if ( ! $typeVertex.buildstate.navigationsAdded ) {
+            $this.builder |=>  __AddEdgesToEntityTypeVertices $this.graph $unqualifiedTypeName
+            $this.builder |=>  __ConnectEntityTypesWithMethodEdges $this.graph $qualifiedTypeName
+#            $typeVertex.buildState.MethodEdgesAdded = $true
+            $typeVertex.buildstate.NavigationsAdded = $true
+        }
     }
 
     function __CopyTypeDataToSingleton($singletonVertex) {
@@ -147,6 +152,7 @@ ScriptClass DynamicBuilder {
 
     function __IsVertexReady($vertex) {
         $vertex.buildState.SingletonEntityTypeDataAdded -and
-        $vertex.buildState.NavigationsAdded
+        $vertex.buildState.NavigationsAdded  # -and
+        # $vertex.buildState.MethodEdgesAdded
     }
 }

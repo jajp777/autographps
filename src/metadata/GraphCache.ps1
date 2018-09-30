@@ -225,7 +225,10 @@ ScriptClass GraphCache {
 
             $graphEndpoint = new-so GraphEndpoint ([GraphCloud]::Public) ([GraphType]::MSGraph) $endpoint http://localhost ([GraphAuthProtocol]::Default)
             $connection = new-so GraphConnection $graphEndpoint $null $null
-            $metadata = invoke-graphrequest -connection $connection '$metadata' -version $apiversion -erroraction silentlycontinue
+            $metadata = try {
+                invoke-graphrequest -connection $connection '$metadata' -version $apiversion -erroraction silentlycontinue
+            } catch {
+            }
 
             write-progress -id 1 -activity $metadataactivity -status "Complete" -completed
             $metadata

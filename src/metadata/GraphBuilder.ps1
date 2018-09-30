@@ -180,7 +180,7 @@ ScriptClass GraphBuilder {
         $::.ProgressWriter |=> WriteProgress -id 1 -activity $metadataActivity @completionArguments
     }
 
-    function __AddMethodTransitions($graph, $methods, $typeName) {
+    function __AddMethodTransitions($graph, $methods, $targetTypeName) {
         $methods | foreach {
             $parameters = try {
                 $_.parameter
@@ -190,16 +190,24 @@ ScriptClass GraphBuilder {
             $method = $_
             $source = if ( $parameters ) {
                 $bindingParameter = $parameters | where { $_.name -eq 'bindingParameter' -or $_.name -eq 'bindParameter' }
-                if ( $bindingParameter -and ( $typeName -ne $null -and $bindingParameter.Type -eq $typeName ) ) {
-                    $bindingTargetVertex = $graph |=> TypeVertexFromTypeName $bindingParameter.Type
+                if ( $bindingParameter ) {
+                    if ( ( $targetTypeName -eq $null ) -or ($bindingParameter.Type -eq $targetTypeName) ) {
+                        if ( $targetTypeName ) {
+                            write-host -fore cyan "Found '$targetTypeName'!"
+                        }
+                        $bindingTargetVertex = $graph |=> TypeVertexFromTypeName $bindingParameter.Type
 
-                    if ( $bindingTargetVertex ) {
-                        $bindingTargetVertex
+                        if ( $bindingTargetVertex ) {
+                            $bindingTargetVertex
+                        } else {
+                            write-verbose "Unable to bind method '$($_.name)' of type '$($bindingParameter.Type)', skipping"
+                        }
                     } else {
-                        write-verbose "Unable to bind '$($_.name)' of type '$($bindingParameter.Type)', skipping"
+                        write-host -fore magenta "Skipping '$($bindingParameter.Type)', not eq '$targetTypeName'"
+                        write-verbose "Skipping '$($bindingParameter.Type)', not eq '$targetTypeName'"
                     }
                 } else {
-                    write-verbose "Unable to find a bindingParameter in parameters for $($_.name)"
+                    write-host -fore cyan "Unable to find a bindingParameter in parameters for $($_.name)"
                 }
             } else {
                 write-verbose "Method '$($_.name)' does not have a parameter attribute, skipping"
@@ -208,12 +216,29 @@ ScriptClass GraphBuilder {
             if ( $source ) {
                 $sink = if ( $method | gm ReturnType ) {
                     $typeName = if ( $method.localname -eq 'function' ) {
-                        $method.ReturnType.Type
+                        $method.ReturnType | select -expandproperty Type
                     } else {
-                        $method.ReturnType
+                        $method.ReturnType | select -expandproperty Type
                     }
 
                     $typeVertex = $graph |=> TypeVertexFromTypeName $typeName
+
+                    if ( $typeVertex -eq $null ) {
+#                        $name = ($::.Entity |=> GetEntityTypeDataFromTypeName $typeName).entitytypename | select -expandproperty type
+                        $name = $typeName
+                        write-host "Method '$($method.name)' has return type '$name', looking for it"
+                        $unqualifiedName = $name.substring($graph.namespace.length + 1, $name.length - $graph.namespace.length - 1)
+                        $sinkSchema = $this.datamodel |=> GetEntityTypes $unqualifiedName
+                        if ( $sinkSchema ) {
+                            __AddEntityTypeVertices $graph $unqualifiedName
+                            $typeVertex = $graph |=> TypeVertexFromTypeName $typeName
+                            if ( ! $typeVertex ) {
+                                throw 'whoa'
+                            }
+                        } else {
+                            write-verbose "Unable to find schema for method '$($method.name)' with type '$typeName'"
+                        }
+                    }
 
                     if ( $typeVertex ) {
                         $typeVertex
