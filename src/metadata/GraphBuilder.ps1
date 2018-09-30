@@ -98,6 +98,10 @@ ScriptClass GraphBuilder {
 #        }
 
         $singleType = $typeName -ne $null
+        if ( $singleType -and $entityTypes -eq $null ) {
+            throw "Type '$typeName' does not exist in the schema for the graph at endpoint '$($graph.endpoint)' with API version '$($graph.apiversion)'"
+        }
+
         __AddVerticesFromSchemas $graph $entityTypes $singleType
 
         __UpdateProgress 20
@@ -227,13 +231,15 @@ ScriptClass GraphBuilder {
 #                        $name = ($::.Entity |=> GetEntityTypeDataFromTypeName $typeName).entitytypename | select -expandproperty type
                         $name = $typeName
                         write-host "Method '$($method.name)' has return type '$name', looking for it"
-                        $unqualifiedName = $name.substring($graph.namespace.length + 1, $name.length - $graph.namespace.length - 1)
-                        $sinkSchema = $this.datamodel |=> GetEntityTypes $unqualifiedName
-                        if ( $sinkSchema ) {
-                            __AddEntityTypeVertices $graph $unqualifiedName
-                            $typeVertex = $graph |=> TypeVertexFromTypeName $typeName
-                            if ( ! $typeVertex ) {
-                                throw 'whoa'
+                        $unqualifiedName = if ( $name.startswith($graph.namespace) ) {
+                            $name.substring($graph.namespace.length + 1, $name.length - $graph.namespace.length - 1)
+                        }
+                        if ( $unqualifiedName ) {
+                            try {
+                                __AddEntityTypeVertices $graph $unqualifiedName
+                                $typeVertex = $graph |=> TypeVertexFromTypeName $typeName
+                            } catch {
+                                # Possibly an enumeratio type, this will just be considered a scalar
                             }
                         } else {
                             write-verbose "Unable to find schema for method '$($method.name)' with type '$typeName'"
