@@ -44,10 +44,10 @@ ScriptClass GraphBuilder {
 
 #        __AddEntitytypeVertices $graph
 
-#        __AddEdgesToEntityTypeVertices $graph
+#         __AddEdgesToEntityTypeVertices $graph
 
 #        __ConnectEntityTypesWithMethodEdges $graph
-
+#        __AddMethodTransitionsByType $graph
 #        __CopyEntityTypeEdgesToSingletons $graph
 
         __UpdateProgress 100
