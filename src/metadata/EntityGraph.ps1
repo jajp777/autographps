@@ -23,21 +23,18 @@ ScriptClass EntityGraph {
     $rootVertices = $null
     $typeVertices = $null
     $namespace = $null
-    $schema = $null
     $builder = $null
+    $dataModel = $null
 
-    function __initialize( $namespace, $apiVersion = 'localtest', [Uri] $endpoint = 'http://localhost', $schemadata ) {
+    function __initialize( $namespace, $apiVersion = 'localtest', [Uri] $endpoint = 'http://localhost', $dataModel ) {
         $this.vertices = @{}
         $this.rootVertices = @{}
         $this.typeVertices = @{}
         $this.ApiVersion = $apiVersion
         $this.Endpoint = $endpoint
         $this.namespace = $namespace
-        $this.schema = $schemadata
-    }
-
-    function GetSchema {
-        $this.schema
+        $this.dataModel = $dataModel
+        $this.builder = new-so DynamicBuilder $this $endpoint $apiVersion $dataModel
     }
 
     function GetRootVertices {
@@ -62,5 +59,14 @@ ScriptClass EntityGraph {
 
     static {
         $nullVertex = new-so EntityVertex $null
+
+        function NewGraph($endpoint, $version, $schemadata) {
+            $dataModel = new-so GraphDataModel $schemadata
+            $graph = new-so EntityGraph ($dataModel |=> GetNamespace) $version $Endpoint $dataModel
+
+            $graph.builder |=> InitializeGraph
+
+            $graph
+        }
     }
 }

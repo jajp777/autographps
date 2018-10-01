@@ -24,21 +24,18 @@ ScriptClass GraphBuilder {
     $dataModel = $null
     $namespace = $null
     $percentComplete = 0
-    $metadata = $null
+    $dataModel = $null
     $deferredBuild = $false
 
-    function __initialize($graphEndpoint, $version, $metadata, $deferredBuild) {
+    function __initialize($graphEndpoint, $version, $dataModel, $deferredBuild) {
         $this.graphEndpoint = $graphEndpoint
         $this.version = $version
-        $this.metadata = $metadata
-        $this.dataModel = new-so GraphDataModel $metadata
+        $this.dataModel = $dataModel
         $this.namespace = $this.dataModel |=> GetNamespace
         $this.deferredBuild = $deferredBuild
     }
 
-    function NewGraph {
-        $graph = new-so EntityGraph $this.namespace $this.version $this.graphEndpoint $this.datamodel.schemadata
-
+    function InitializeGraph($graph) {
         __UpdateProgress 0
 
         __AddRootVertices $graph
@@ -52,8 +49,6 @@ ScriptClass GraphBuilder {
 #        __CopyEntityTypeEdgesToSingletons $graph
 
         __UpdateProgress 100
-
-        $graph
     }
 
     function AddEntityTypeVertex($graph, $typeName) {

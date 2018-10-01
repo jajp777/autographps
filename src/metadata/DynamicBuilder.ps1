@@ -18,9 +18,13 @@ ScriptClass DynamicBuilder {
     $builder = $null
     $graph = $null
 
-    function __initialize($graph, $graphEndpoint, $version, $metadata) {
+    function __initialize($graph, $graphEndpoint, $version, $dataModel) {
         $this.graph = $graph
-        $this.builder = new-so GraphBuilder $graphEndpoint $version $metadata
+        $this.builder = new-so GraphBuilder $graphEndpoint $version $datamodel
+    }
+
+    function InitializeGraph {
+        $this.builder |=> InitializeGraph $this.graph
     }
 
     function GetTypeVertex($qualifiedTypeName, $parent, $includeSinks) {
