@@ -143,7 +143,8 @@ ScriptClass DynamicBuilder {
         write-host "AddEdges '$unqualifiedTypeName'"
         if ( ! $typeVertex.buildstate.navigationsAdded ) {
             $this.builder |=>  __AddEdgesToEntityTypeVertices $this.graph $unqualifiedTypeName
-            $this.builder |=>  __ConnectEntityTypesWithMethodEdges $this.graph $qualifiedTypeName
+            $this.builder |=>  __AddMethodTransitionsByType $this.graph $qualifiedTypeName
+#            $this.builder |=>  __ConnectEntityTypesWithMethodEdges $this.graph $qualifiedTypeName
 #            $typeVertex.buildState.MethodEdgesAdded = $true
             $typeVertex.buildstate.NavigationsAdded = $true
         }
