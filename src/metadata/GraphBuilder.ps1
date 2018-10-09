@@ -167,8 +167,10 @@ ScriptClass GraphBuilder {
 
         write-host "Qualified:", $qualifiedTypeName
         __AddEdgesToEntityTypeVertex $graph $vertex
-        __AddMethodTransitionsToVertex $graph $vertex
-        if ( $vertex.entity.type -eq 'Singleton' ) {
+
+        if ( $vertex.entity.type -ne 'Singleton' ) {
+            __AddMethodTransitionsToVertex $graph $vertex
+        } else {
             __CopyEntityTypeEdgesToSingletonVertex $graph $vertex
         }
     }
@@ -181,10 +183,6 @@ ScriptClass GraphBuilder {
             $graph.typeVertices.values | where name -eq $typeName
         } else {
             $graph.typeVertices.Values
-        }
-
-        if ( $typeVertices -eq $null ) {
-            throw 'no more'
         }
 
         $typeVertices | foreach {
@@ -267,7 +265,9 @@ ScriptClass GraphBuilder {
     }
 
     function __AddMethodTransitionsToVertex($graph, $sourceVertex) {
+        write-host "addmethodtransitionstovertex called to add methods to", $sourceVertex.name
         if ( $sourceVertex.TestFlags([BuildFlags]::MethodsProcessed) ) {
+            write-host 'methods already processed, leaving'
             return
         }
 
@@ -275,6 +275,7 @@ ScriptClass GraphBuilder {
         $methods = $graph.methodBindings[$sourceTypeName]
 
         if ( ! $methods ) {
+            write-host "No methods for vertex", $sourceVertex.name
             return
         }
 
@@ -330,10 +331,6 @@ ScriptClass GraphBuilder {
 
         $typeNames | foreach {
             $typeVertex = $graph |=> TypeVertexFromTypeName $_
-            if ( $typeVertex -eq $null ) {
-                write-host "Name", $_, $targetTypeName
-                throw 'anger'
-            }
             __AddMethodTransitionsToVertex $graph $typeVertex
         }
     }
