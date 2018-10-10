@@ -58,7 +58,12 @@ ScriptClass GraphBuilder {
 
 #        __AddEntitytypeVertices $graph
 
-#         __AddEdgesToEntityTypeVertices $graph
+<#
+        $graph.typevertices.values | foreach {
+            __AddEdgesToVertex $graph $_ $true
+        }
+#>
+#        __AddEdgesToEntityTypeVertices $graph
 
 #        __ConnectEntityTypesWithMethodEdges $graph
 #        __AddMethodTransitionsByType $graph
@@ -113,10 +118,15 @@ ScriptClass GraphBuilder {
     function __AddEntityTypeVertices($graph, $unqualifiedTypeName) {
 #        $entityTypes = $this.dataModel |=> GetEntityTypes $unqualifiedTypeName
 
-        $qualifiedTypeName = $graph.namespace, $unqualifiedName -join '.'
-        $entityTypes = $graph |=> GetEntityTypeSchema $qualifiedTypeName
-        if ( $unqualifiedTypeName -and $entityTypes -eq $null ) {
-            throw "Type '$unqualifiedTypeName' does not exist in the schema for the graph at endpoint '$($graph.endpoint)' with API version '$($graph.apiversion)'"
+        $entityTypes = if ( $unqualifiedTypeName ) {
+            $qualifiedTypeName = $graph.namespace, $unqualifiedTypeName -join '.'
+            $foundType = $graph |=> GetEntityTypeSchema $qualifiedTypeName
+            if ( $unqualifiedTypeName -and $foundType -eq $null ) {
+                throw "Type '$unqualifiedTypeName' does not exist in the schema for the graph at endpoint '$($graph.endpoint)' with API version '$($graph.apiversion)'"
+            }
+            $foundType
+        } else {
+            $this.dataModel |=> GetEntityTypes $unqualifiedTypeName
         }
 
         __AddVerticesFromSchemas $graph $entityTypes
