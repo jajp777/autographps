@@ -81,7 +81,6 @@ ScriptClass DynamicBuilder {
     function __AddTypeVertex($qualifiedTypeName) {
         $vertex = $this.graph |=> TypeVertexFromTypeName $qualifiedTypeName
         if ( ! $vertex ) {
-            write-host 'need to add', $qualifiedTypeName
             $unqualifiedName = $qualifiedTypeName.substring($this.graph.namespace.length + 1, $qualifiedTypeName.length - $this.graph.namespace.length - 1)
             $this.builder |=> __AddEntityTypeVertices $this.graph $unqualifiedName
         }

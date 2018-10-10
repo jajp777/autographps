@@ -54,6 +54,8 @@ ScriptClass GraphBuilder {
 
         __AddMethodBindings $graph
 
+        __AddEntityTypeSchemas $graph
+
 #        __AddEntitytypeVertices $graph
 
 #         __AddEdgesToEntityTypeVertices $graph
@@ -75,6 +77,14 @@ ScriptClass GraphBuilder {
 
         $entitySets = $this.dataModel |=> GetEntitySets
         __AddVerticesFromSchemas $graph $entitySets
+    }
+
+    function __AddEntityTypeSchemas($graph) {
+        $entityTypes = $this.dataModel |=> GetEntityTypes
+
+        $entityTypes | foreach {
+            $graph |=> AddEntityTypeSchema $_.name $_
+        }
     }
 
     function __AddMethodBindings($graph) {
@@ -101,8 +111,10 @@ ScriptClass GraphBuilder {
     }
 
     function __AddEntityTypeVertices($graph, $unqualifiedTypeName) {
-        $entityTypes = $this.dataModel |=> GetEntityTypes $unqualifiedTypeName
+#        $entityTypes = $this.dataModel |=> GetEntityTypes $unqualifiedTypeName
 
+        $qualifiedTypeName = $graph.namespace, $unqualifiedName -join '.'
+        $entityTypes = $graph |=> GetEntityTypeSchema $qualifiedTypeName
         if ( $unqualifiedTypeName -and $entityTypes -eq $null ) {
             throw "Type '$unqualifiedTypeName' does not exist in the schema for the graph at endpoint '$($graph.endpoint)' with API version '$($graph.apiversion)'"
         }
@@ -121,8 +133,6 @@ ScriptClass GraphBuilder {
         } else {
             @()
         }
-
-        write-host 'adding edges for', $sourceVertex.typeName
 
         $transitions | foreach {
             $transition = $_
@@ -149,12 +159,10 @@ ScriptClass GraphBuilder {
             }
         }
 
-        write-host "Navigations processed for", $sourceVertex.name
         $sourceVertex.SetFlags([BuildFlags]::NavigationsProcessed)
     }
 
     function __AddEdgesToVertex($graph, $vertex, $skipIfExist) {
-        write-host "edgestovertex: $($vertex.name)", $vertex.flags, $skipIfExist
         if ( $vertex.TestFlags($::.GraphBuilder.AllBuildFlags) ) {
             if ( !$skipIfExist ) {
                 throw "Vertex '$($vertex.name)' already has edges"
@@ -165,7 +173,6 @@ ScriptClass GraphBuilder {
         $qualifiedTypeName = $vertex.entity.typedata.entitytypename
         $unqualifiedTypeName = $qualifiedTypeName.substring($graph.namespace.length + 1, $qualifiedTypename.length - $graph.namespace.length - 1)
 
-        write-host "Qualified:", $qualifiedTypeName
         __AddEdgesToEntityTypeVertex $graph $vertex
 
         if ( $vertex.entity.type -ne 'Singleton' ) {
@@ -178,7 +185,6 @@ ScriptClass GraphBuilder {
     function __AddEdgesToEntityTypeVertices($graph, $typeName) {
         # This is the unqualifiedtypename -- seems inefficient
         # Why not just look up the type by key (i.e. qualified type name)
-        write-host 'addedges type name', $typeName
         $typeVertices = if ( $typeName ) {
             $graph.typeVertices.values | where name -eq $typeName
         } else {
@@ -186,7 +192,6 @@ ScriptClass GraphBuilder {
         }
 
         $typeVertices | foreach {
-            write-host "vertex", $_.name
             __AddEdgesToEntityTypeVertex $graph $_
         }
     }
@@ -213,7 +218,6 @@ ScriptClass GraphBuilder {
     }
 
     function __CopyEntityTypeEdgesToSingletonVertex($graph, $source) {
-        write-host 'called to copy', $source.name, $source.flags
         if ( $source.TestFlags([BuildFlags]::CopiedToSingleton) ) {
             throw "Data from type already copied to singleton '$($source.name)'"
         }
@@ -225,22 +229,13 @@ ScriptClass GraphBuilder {
             throw "Unable to find an entity type for singleton '$($_.name)' and '$entityName'"
         }
 
-        write-host 'type completed', $typeVertex.flags
         __AddEdgesToVertex $graph $typeVertex $true
-
-        $typeVertex.outgoingEdges.keys | out-host
 
         $edges = $typeVertex.outgoingEdges.values | foreach {
             if ( ( $_ | gm transition ) -ne $null ) {
                 $_
             }
         }
-
-        write-host "`nedges to copy from", $typeVertex.name
-        $edges.name | out-host
-
-        write-host "`ncurrent singleton"
-        $source.outgoingedges.keys | out-host
 
         $edges | foreach {
             $sink = $_.sink
@@ -265,9 +260,8 @@ ScriptClass GraphBuilder {
     }
 
     function __AddMethodTransitionsToVertex($graph, $sourceVertex) {
-        write-host "addmethodtransitionstovertex called to add methods to", $sourceVertex.name
         if ( $sourceVertex.TestFlags([BuildFlags]::MethodsProcessed) ) {
-            write-host 'methods already processed, leaving'
+            write-verbose "Methods already processed for $($sourceVertex.name), skipping method addition"
             return
         }
 
@@ -275,7 +269,7 @@ ScriptClass GraphBuilder {
         $methods = $graph.methodBindings[$sourceTypeName]
 
         if ( ! $methods ) {
-            write-host "No methods for vertex", $sourceVertex.name
+            write-verbose "Vertex ($sourceVertex.name) has no methods, skipping method addition"
             return
         }
 
