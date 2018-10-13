@@ -44,7 +44,7 @@ ScriptClass DynamicBuilder {
         $vertex
     }
 
-    function UpdateVertex($vertex) {
+    function GetVertexEdges($vertex) {
         if ( ! (__IsVertexReady $vertex) ) {
             switch ( $vertex.entity.type ) {
                 'Singleton' {
@@ -72,6 +72,8 @@ ScriptClass DynamicBuilder {
                 }
             }
         }
+
+        $vertex.outgoingEdges
     }
 
     function __AddTypeForVertex($vertex) {

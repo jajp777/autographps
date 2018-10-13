@@ -119,17 +119,17 @@ ScriptClass GraphSegment {
         $isVertex = $this.graphElement.pstypename -eq 'EntityVertex'
 
         $edges = if ( $isVertex ) {
-            $graph.builder |=> UpdateVertex $this.graphElement
+            $localEdges = $graph.builder |=> GetVertexEdges $this.graphElement
             if ( $segmentName -and $segmentName -ne '' ) {
-                $this.graphElement.outGoingEdges[$segmentName]
+                $localEdges[$segmentName]
             } else {
-                $this.graphElement.outGoingEdges.values
+                $localEdges.values
             }
         } else {
             # This is already an edge, so the next edges come from the sink
-            $graph.builder |=> UpdateVertex $this.GraphElement.sink
+            $sinkEdges = $graph.builder |=> GetVertexEdges $this.GraphElement.sink
             if ( ! ( $this.graphElement.sink |=> IsNull ) ) {
-                $this.graphElement.sink.outgoingEdges.values
+                $sinkEdges.values
             }
         }
 
