@@ -27,7 +27,7 @@ ScriptClass DynamicBuilder {
         $this.builder |=> InitializeGraph $this.graph
     }
 
-    function GetTypeVertex($qualifiedTypeName, $parent, $includeSinks) {
+    function GetTypeVertex($qualifiedTypeName) {
         $vertex = $this.graph |=> TypeVertexFromTypeName $qualifiedTypeName
 
         if ( ! $vertex ) {
@@ -39,12 +39,12 @@ ScriptClass DynamicBuilder {
             throw "Vertex '$qualifiedTypeName' not found"
         }
 
-        UpdateVertex $vertex $parent $includeSinks
+        UpdateVertex $vertex
 
         $vertex
     }
 
-    function UpdateVertex($vertex, $parent, $includeSinks) {
+    function UpdateVertex($vertex) {
         if ( ! (__IsVertexReady $vertex) ) {
             switch ( $vertex.entity.type ) {
                 'Singleton' {
@@ -84,10 +84,6 @@ ScriptClass DynamicBuilder {
             $unqualifiedName = $qualifiedTypeName.substring($this.graph.namespace.length + 1, $qualifiedTypeName.length - $this.graph.namespace.length - 1)
             $this.builder |=> __AddEntityTypeVertices $this.graph $unqualifiedName
         }
-    }
-
-    function __CopyTypeDataToSingleton($singletonVertex) {
-        $this.builder |=> __CopyEntityTypeEdgesToSingletonVertex $this.graph $singletonVertex
     }
 
     function __IsVertexReady($vertex) {

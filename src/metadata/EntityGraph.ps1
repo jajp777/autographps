@@ -22,8 +22,6 @@ ScriptClass EntityGraph {
     $vertices = $null
     $rootVertices = $null
     $typeVertices = $null
-    $methodBindings = $null
-    $typeSchemas = $null
     $namespace = $null
     $builder = $null
     $dataModel = $null
@@ -32,8 +30,6 @@ ScriptClass EntityGraph {
         $this.vertices = @{}
         $this.rootVertices = @{}
         $this.typeVertices = @{}
-        $this.methodBindings = @{}
-        $this.typeSchemas = @{}
         $this.ApiVersion = $apiVersion
         $this.Endpoint = $endpoint
         $this.namespace = $namespace
@@ -43,23 +39,6 @@ ScriptClass EntityGraph {
 
     function GetRootVertices {
         $this.rootVertices
-    }
-
-    function AddEntityTypeSchema($unqualifiedTypeName, $typeSchema) {
-        $qualifiedName = $this.namespace, $unqualifiedTypeName -join '.'
-        $this.typeSchemas.Add($qualifiedName, $typeSchema)
-    }
-
-    function GetEntityTypeSchema($qualifiedTypeName) {
-        $this.typeSchemas[$qualifiedTypeName]
-    }
-
-    function AddMethodBinding($typeName, $methodSchema) {
-        if ( $this.methodBindings[$typeName] -eq $null ) {
-            $this.methodBindings[$typeName] = @()
-         }
-
-        $this.methodBindings[$typeName] += $methodSchema
     }
 
     function AddVertex($entity) {
