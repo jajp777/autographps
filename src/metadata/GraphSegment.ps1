@@ -94,8 +94,7 @@ ScriptClass GraphSegment {
             }
         } elseif ( $this.graphElement.type -eq 'EntitySet' ) {
             $typeData = $this.graphElement.entity.typeData
-            $graph.builder |=> GetTypeVertex $typeData.EntityTypeName
-            #$graph |=> TypeVertexFromTypeName $typeData.EntityTypeName
+            $graph |=> GetTypeVertex $typeData.EntityTypeName
         } else {
             throw "Unexpected vertex type '$($this.graphElement.type)' for segment '$($segment.name)'"
         }
@@ -119,7 +118,7 @@ ScriptClass GraphSegment {
         $isVertex = $this.graphElement.pstypename -eq 'EntityVertex'
 
         $edges = if ( $isVertex ) {
-            $localEdges = $graph.builder |=> GetVertexEdges $this.graphElement
+            $localEdges = $graph |=> GetVertexEdges $this.graphElement
             if ( $segmentName -and $segmentName -ne '' ) {
                 $localEdges[$segmentName]
             } else {
@@ -127,7 +126,7 @@ ScriptClass GraphSegment {
             }
         } else {
             # This is already an edge, so the next edges come from the sink
-            $sinkEdges = $graph.builder |=> GetVertexEdges $this.GraphElement.sink
+            $sinkEdges = $graph |=> GetVertexEdges $this.GraphElement.sink
             if ( ! ( $this.graphElement.sink |=> IsNull ) ) {
                 $sinkEdges.values
             }

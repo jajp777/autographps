@@ -15,7 +15,6 @@
 . (import-script GraphDataModel)
 . (import-script EntityEdge)
 . (import-script EntityVertex)
-. (import-script EntityGraph)
 
 enum BuildFlags {
     NavigationsProcessed = 1

@@ -34,7 +34,6 @@ function Get-GraphType {
     }
 
     $entityGraph = $::.GraphManager |=> GetGraph $context
-    $builder = $entityGraph.builder
 
     if ( ! $ComplexType.IsPresent ) {
         $types = if ( $Name ) {

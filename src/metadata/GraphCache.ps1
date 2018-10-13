@@ -14,6 +14,7 @@
 
 . (import-script ..\common\PreferenceHelper)
 . (import-script GraphDataModel)
+. (import-script EntityGraph)
 
 enum MetadataStatus {
     NotStarted
