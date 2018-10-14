@@ -25,7 +25,6 @@ ScriptClass EntityGraph {
     $typeVertices = $null
     $namespace = $null
     $builder = $null
-    $dataModel = $null
 
     function __initialize( $namespace, $apiVersion = 'localtest', [Uri] $endpoint = 'http://localhost', $dataModel ) {
         $this.vertices = @{}
@@ -34,7 +33,6 @@ ScriptClass EntityGraph {
         $this.ApiVersion = $apiVersion
         $this.Endpoint = $endpoint
         $this.namespace = $namespace
-        $this.dataModel = $dataModel
         $this.builder = new-so GraphBuilder $endpoint $apiVersion $dataModel
     }
 

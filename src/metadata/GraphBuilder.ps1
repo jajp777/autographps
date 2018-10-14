@@ -80,7 +80,7 @@ ScriptClass GraphBuilder {
     function AddEntityTypeVertices($graph, $unqualifiedTypeName) {
         $entityTypes = if ( $unqualifiedTypeName ) {
             $qualifiedTypeName = $graph.namespace, $unqualifiedTypeName -join '.'
-            $foundType = $graph.dataModel |=> GetEntityTypeByName $qualifiedTypeName
+            $foundType = $this.dataModel |=> GetEntityTypeByName $qualifiedTypeName
             if ( $unqualifiedTypeName -and $foundType -eq $null ) {
                 throw "Type '$unqualifiedTypeName' does not exist in the schema for the graph at endpoint '$($graph.endpoint)' with API version '$($graph.apiversion)'"
             }
@@ -111,7 +111,7 @@ ScriptClass GraphBuilder {
             if ( ! $sink ) {
                 $name = $transition.typedata.entitytypename
                 $unqualifiedName = $name.substring($graph.namespace.length + 1, $name.length - $graph.namespace.length - 1)
-                $sinkSchema = $graph.dataModel |=> GetEntityTypeByName $name
+                $sinkSchema = $this.dataModel |=> GetEntityTypeByName $name
                 if ( $sinkSchema ) {
                     __AddEntityTypeVertex $graph $unqualifiedName
                     $sink = $graph |=> TypeVertexFromTypeName $transition.typedata.entitytypename
@@ -200,7 +200,7 @@ ScriptClass GraphBuilder {
         }
 
         $sourceTypeName = $sourceVertex.entity.typeData.EntityTypeName
-        $methods = $graph.dataModel |=> GetMethodBindingsForType $sourceTypeName
+        $methods = $this.dataModel |=> GetMethodBindingsForType $sourceTypeName
 
         if ( ! $methods ) {
             write-verbose "Vertex ($sourceVertex.name) has no methods, skipping method addition"
