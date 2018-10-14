@@ -82,31 +82,10 @@ ScriptClass EntityGraph {
 
     function __UpdateVertex($vertex) {
         if ( ! (__IsVertexReady $vertex) ) {
-            switch ( $vertex.entity.type ) {
-                'Singleton' {
-                    __AddTypeVertex $vertex.entity.typedata.entitytypename
-                    __AddTypeForVertex $vertex
-                }
-                'EntityType' {
-                    __AddTypeForVertex $vertex
-                }
-                'EntitySet' {
-                    __AddTypeVertex $vertex.entity.typedata.entitytypename
-                    __AddTypeForVertex $vertex
-                }
-                'Action' {
-                    __AddTypeForVertex($vertex)
-                }
-                '__Scalar' {
-                    __AddTypeForVertex($vertex)
-                }
-                '__Root' {
-                    __AddTypeForVertex($vertex)
-                }
-                default {
-                    throw "Unknown entity type $($vertex.entity.type) for entity name $($vertex.entity.name)"
-                }
+            if ( $vertex.entity.type -eq 'Singleton' -or $vertex.entity.type -eq 'EntitySet' ) {
+                __AddTypeVertex $vertex.entity.typedata.entitytypename
             }
+            __AddTypeForVertex $vertex
         }
     }
 
