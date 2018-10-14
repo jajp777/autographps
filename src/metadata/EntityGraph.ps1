@@ -90,14 +90,14 @@ ScriptClass EntityGraph {
     }
 
     function __AddTypeForVertex($vertex) {
-        $this.builder |=> __AddEdgesToVertex $this $vertex $true
+        $this.builder |=> AddEdgesToVertex $this $vertex $true
     }
 
     function __AddTypeVertex($qualifiedTypeName) {
         $vertex = TypeVertexFromTypeName $qualifiedTypeName
         if ( ! $vertex ) {
             $unqualifiedName = $qualifiedTypeName.substring($this.namespace.length + 1, $qualifiedTypeName.length - $this.namespace.length - 1)
-            $this.builder |=> __AddEntityTypeVertices $this $unqualifiedName
+            $this.builder |=> AddEntityTypeVertices $this $unqualifiedName
         }
     }
 

@@ -55,7 +55,7 @@ ScriptClass GraphBuilder {
     }
 
     function __AddEntityTypeVertex($graph, $typeName) {
-        __AddEntityTypeVertices $graph $typeName
+        AddEntityTypeVertices $graph $typeName
     }
 
     function __AddRootVertices($graph) {
@@ -77,7 +77,7 @@ ScriptClass GraphBuilder {
         $graph |=> AddVertex $entity
     }
 
-    function __AddEntityTypeVertices($graph, $unqualifiedTypeName) {
+    function AddEntityTypeVertices($graph, $unqualifiedTypeName) {
         $entityTypes = if ( $unqualifiedTypeName ) {
             $qualifiedTypeName = $graph.namespace, $unqualifiedTypeName -join '.'
             $foundType = $graph.dataModel |=> GetEntityTypeByName $qualifiedTypeName
@@ -131,7 +131,7 @@ ScriptClass GraphBuilder {
         $sourceVertex.SetFlags([BuildFlags]::NavigationsProcessed)
     }
 
-    function __AddEdgesToVertex($graph, $vertex, $skipIfExist) {
+    function AddEdgesToVertex($graph, $vertex, $skipIfExist) {
         if ( $vertex.TestFlags($::.GraphBuilder.AllBuildFlags) ) {
             if ( !$skipIfExist ) {
                 throw "Vertex '$($vertex.name)' already has edges"
@@ -163,7 +163,7 @@ ScriptClass GraphBuilder {
             throw "Unable to find an entity type for singleton '$($_.name)' and '$entityName'"
         }
 
-        __AddEdgesToVertex $graph $typeVertex $true
+        AddEdgesToVertex $graph $typeVertex $true
 
         $edges = $typeVertex.outgoingEdges.values | foreach {
             if ( ( $_ | gm transition ) -ne $null ) {
