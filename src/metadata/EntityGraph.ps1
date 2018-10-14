@@ -79,11 +79,13 @@ ScriptClass EntityGraph {
     }
 
     function __UpdateVertex($vertex) {
-        if ( ! (__IsVertexReady $vertex) ) {
+        if ( ! (__IsVertexComplete $vertex) ) {
+            $::.ProgressWriter |=> WriteProgress -id 1 -activity "Update vertex '$($vertex.name)'"
             if ( $vertex.entity.type -eq 'Singleton' -or $vertex.entity.type -eq 'EntitySet' ) {
                 __AddTypeVertex $vertex.entity.typedata.entitytypename
             }
             __AddTypeForVertex $vertex
+            $::.ProgressWriter |=> WriteProgress -id 1 -activity "Vertex '$($vertex.name)' successfully update" -completed
         }
     }
 
@@ -99,7 +101,7 @@ ScriptClass EntityGraph {
         }
     }
 
-    function __IsVertexReady($vertex) {
+    function __IsVertexComplete($vertex) {
         $vertex.TestFlags($::.GraphBuilder.AllBuildFlags) -eq $::.GraphBuilder.AllBuildFlags
     }
 
