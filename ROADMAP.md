@@ -2,10 +2,18 @@
 
 ## To-do items -- prioritized
 
-* Fix qualified / vs. unqualified names in metadata classses
+* Fix qualified / vs. unqualified names in metadata classes
+* Add `$value` support.
 
 * Add app creation, enumeration, update
   * New-GraphApplication
+  * Get-GraphApplication
+  * New-GraphApplicationCertificate
+  * Get-GraphApplicationCertificate
+  * Set-GraphApplicationCertificate
+  * Get-GraphApplicationLocalCertificate
+  * Remove-GraphApplicationLocalCertificate
+  * Import-GraphApplicationLocalCertificate
   * Remove-GraphApplication
   * Set-GraphApplication
   * Set-GraphApplicationPermissions
